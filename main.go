@@ -18,7 +18,9 @@ func main() {
 
 }
 
+// get args from env
 func getEnv() {
+
 	sshHost = os.Getenv("SSH_HOST")
 	sshPort = os.Getenv("SSH_PORT")
 	sshPassword = os.Getenv("SSH_PW")
