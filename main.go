@@ -7,6 +7,7 @@ import (
 	"golang.org/x/crypto/ssh"
 	"log"
 	"os"
+	"socks-proxy-over-ssh/cmd"
 	"sync"
 )
 
@@ -24,6 +25,13 @@ var (
 )
 
 func main() {
+
+	root := cmd.RootCmd()
+	err := root.Execute()
+	if err != nil {
+		return
+	}
+
 	getEnv()
 
 	wg := sync.WaitGroup{}
