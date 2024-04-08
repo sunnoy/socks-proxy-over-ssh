@@ -1,7 +1,7 @@
 package main
 
 import (
-	"fmt"
+	_ "embed"
 	"github.com/blacknon/go-sshlib"
 	"github.com/things-go/go-socks5"
 	"golang.org/x/crypto/ssh"
@@ -11,107 +11,77 @@ import (
 )
 
 var (
-	sshHost     = ""
-	sshPort     = "22"
-	sshUser     = "root"
-	sshPassword = ""
 
-	socks5Listen   = "127.0.0.1:1989"
-	socks5User     = ""
-	socks5Password = ""
+	//go:embed host
+	sshHost string
+	sshPort = "3390"
 
-	sshListen = "0.0.0.0:3000"
+	//go:embed user
+	sshUser string
+
+	socks5Listen = "127.0.0.1:9999"
+
+	sshListen = "0.0.0.0:3391"
+
+	// 将 sz 文件写入变量
+	//go:embed ssh.key
+	sshKey string
+
+	wg = sync.WaitGroup{}
 )
 
 func main() {
 
-	wg := sync.WaitGroup{}
 	wg.Add(2)
 
-	// do ray sock5 proxy
-	go func() {
-		credentials := socks5.StaticCredentials{
-			socks5User: socks5Password,
-		}
-
-		cator := socks5.UserPassAuthenticator{Credentials: credentials}
-
-		// Create a SOCKS5 server
-		server := socks5.NewServer(
-			socks5.WithAuthMethods([]socks5.Authenticator{cator}),
-		)
-
-		log.Println("开始启动服务端！")
-
-		if err := server.ListenAndServe("tcp", socks5Listen); err != nil {
-			panic(err)
-		}
-
-		wg.Done()
-	}()
-
-	go func() {
-
-		// Create sshlib.Connect
-		con := &sshlib.Connect{}
-
-		// Create ssh.AuthMethod
-		authMethod := sshlib.CreateAuthMethodPassword(sshPassword)
-
-		// todo 添加key认证
-		keyAuthMethod, _ := sshlib.CreateAuthMethodPublicKey("key file path", "key password")
-
-		if keyAuthMethod != nil {
-			err := con.CreateClient(sshHost, sshPort, sshUser, []ssh.AuthMethod{keyAuthMethod})
-			if err != nil {
-				fmt.Println(err)
-				os.Exit(1)
-			}
-		}
-
-		// Connect ssh server
-		if authMethod != nil {
-			err := con.CreateClient(sshHost, sshPort, sshUser, []ssh.AuthMethod{authMethod})
-			if err != nil {
-				fmt.Println(err)
-				os.Exit(1)
-			}
-		}
-
-		// PortForward
-		err := con.TCPRemoteForward(socks5Listen, sshListen)
-		if err != nil {
-			log.Println(err)
-		}
-
-		// Set terminal log
-		//con.SetLog(termlog, false)
-
-		// Create session
-		session, err := con.CreateSession()
-		if err != nil {
-			fmt.Println(err)
-			os.Exit(1)
-		}
-
-		//data, _ := session.CombinedOutput("watch -n 1 'netstat -antp | grep ssh | grep 3000' | tail -f -")
-		//
-		//if err != nil {
-		//	log.Fatalf("failed to call CombinedOutput(): %v", err)
-		//}
-		//log.Printf("output: %s", data)
-
-		log.Println("开启启动加密隧道！")
-		// Start ssh shell
-		err = con.CmdShell(session, "tail -f /dev/null")
-		if err != nil {
-			log.Println(err)
-		}
-
-		wg.Done()
-
-	}()
+	go socks5Server()
+	go sshRemoteForward()
 
 	wg.Wait()
 
+}
+
+func sshRemoteForward() {
+
+	// Create sshlib.Connect
+	con := &sshlib.Connect{}
+
+	err := os.WriteFile(".ssh.key", []byte(sshKey), 0644)
+	if err != nil {
+		log.Println(err)
+	}
+	keyAuthMethod, _ := sshlib.CreateAuthMethodPublicKey(".ssh.key", "")
+
+	if keyAuthMethod != nil {
+		err := con.CreateClient(sshHost, sshPort, sshUser, []ssh.AuthMethod{keyAuthMethod})
+		if err != nil {
+			log.Println(err)
+			os.Exit(1)
+		}
+	}
+
+	// PortForward
+	err = con.TCPRemoteForward(socks5Listen, sshListen)
+	if err != nil {
+		log.Println(err)
+	} else {
+		log.Println("远程转发成功！")
+	}
+
+	wg.Done()
+}
+
+func socks5Server() {
+	// Create a SOCKS5 server
+	server := socks5.NewServer(
+		socks5.WithLogger(socks5.NewLogger(log.New(os.Stdout, "socks5: ", log.LstdFlags))),
+	)
+
+	log.Println("开始启动服务端！")
+
+	if err := server.ListenAndServe("tcp", socks5Listen); err != nil {
+		log.Println(err)
+	}
+
+	wg.Done()
 }

@@ -16,6 +16,7 @@ go mod tidy
 CGO_ENABLED=0 GOOS=darwin GOARCH=amd64 go build main.go
 CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build main.go
 
+
 # macos build
 CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build main.go
 CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build main.go
@@ -50,28 +51,5 @@ C:\mingw64
 
 # 4
 # add system env
-```
-
-
-# run
-
-```bash
-# linux macos
-export SSH_HOST="you ssh server ip"
-export SSH_PORT="you ssh server port"
-export SSH_PW="you ssh server password"
-export SOCKS_L="you local socks serer"
-export SSH_L="you remote ssh server listen port map to local socks server listen"
-
-
-# windows
-set SSH_HOST="you ssh server ip"
-set SSH_PORT="you ssh server port"
-set SSH_PW="you ssh server password"
-set SOCKS_L="you local socks serer"
-set SSH_L="you remote ssh server listen port map to local socks server listen"
-
-
-go run 
 ```
 
