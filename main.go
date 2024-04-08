@@ -7,7 +7,6 @@ import (
 	"golang.org/x/crypto/ssh"
 	"log"
 	"os"
-	"socks-proxy-over-ssh/cmd"
 	"sync"
 )
 
@@ -17,7 +16,7 @@ var (
 	sshUser     = "root"
 	sshPassword = ""
 
-	socks5Listen   = "localhost:1989"
+	socks5Listen   = "127.0.0.1:1989"
 	socks5User     = ""
 	socks5Password = ""
 
@@ -25,14 +24,6 @@ var (
 )
 
 func main() {
-
-	root := cmd.RootCmd()
-	err := root.Execute()
-	if err != nil {
-		return
-	}
-
-	getEnv()
 
 	wg := sync.WaitGroup{}
 	wg.Add(2)
@@ -52,7 +43,7 @@ func main() {
 
 		log.Println("开始启动服务端！")
 
-		if err := server.ListenAndServe("tcp", ":1989"); err != nil {
+		if err := server.ListenAndServe("tcp", socks5Listen); err != nil {
 			panic(err)
 		}
 
@@ -121,17 +112,6 @@ func main() {
 
 	}()
 
-}
-
-// get args from env
-func getEnv() {
-
-	sshHost = os.Getenv("SSH_HOST")
-	sshPort = os.Getenv("SSH_PORT")
-	sshPassword = os.Getenv("SSH_PW")
-	socks5Listen = os.Getenv("SOCKS_L")
-	socks5User = os.Getenv("SOCKSU")
-	socks5Password = os.Getenv("SOCKSPW")
-	sshListen = os.Getenv("SSH_L")
+	wg.Wait()
 
 }
