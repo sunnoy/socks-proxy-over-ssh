@@ -77,10 +77,9 @@ func socks5Server() {
 	//socks5.WithLogger(socks5.NewLogger(log.New(os.Stdout, "socks5: ", log.LstdFlags))),
 	)
 
+	log.Println("world")
 	if err := server.ListenAndServe("tcp", socks5Listen); err != nil {
 		log.Println(err)
-	} else {
-		log.Println("world")
 	}
 
 	wg.Done()
