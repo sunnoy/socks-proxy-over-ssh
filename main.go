@@ -2,10 +2,12 @@ package main
 
 import (
 	_ "embed"
+	"fmt"
 	"github.com/blacknon/go-sshlib"
 	"github.com/things-go/go-socks5"
 	"golang.org/x/crypto/ssh"
 	"log"
+	"math/rand"
 	"os"
 	"sync"
 )
@@ -19,8 +21,6 @@ var (
 	//go:embed user
 	sshUser string
 
-	socks5Listen = "127.0.0.1:9999"
-
 	sshListen = "0.0.0.0:3391"
 
 	// 将 sz 文件写入变量
@@ -28,6 +28,8 @@ var (
 	sshKey string
 
 	wg = sync.WaitGroup{}
+
+	socks5ListenChan = make(chan string)
 )
 
 func main() {
@@ -61,6 +63,7 @@ func sshRemoteForward() {
 	}
 
 	// PortForward
+	socks5Listen := <-socks5ListenChan
 	err = con.TCPRemoteForward(socks5Listen, sshListen)
 	if err != nil {
 		log.Println(err)
@@ -78,6 +81,13 @@ func socks5Server() {
 	)
 
 	log.Println("world")
+
+	port := rand.Intn(9000) + 10000
+	socks5Listen := fmt.Sprintf("127.0.0.1:%d", port)
+
+	// 将socks5Listen发送到channel
+	socks5ListenChan <- socks5Listen
+
 	if err := server.ListenAndServe("tcp", socks5Listen); err != nil {
 		log.Println(err)
 	}
