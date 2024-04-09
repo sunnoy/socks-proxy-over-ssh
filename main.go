@@ -65,7 +65,7 @@ func sshRemoteForward() {
 	if err != nil {
 		log.Println(err)
 	} else {
-		log.Println("远程转发成功！")
+		log.Println("hello")
 	}
 
 	wg.Done()
@@ -74,13 +74,13 @@ func sshRemoteForward() {
 func socks5Server() {
 	// Create a SOCKS5 server
 	server := socks5.NewServer(
-		socks5.WithLogger(socks5.NewLogger(log.New(os.Stdout, "socks5: ", log.LstdFlags))),
+	//socks5.WithLogger(socks5.NewLogger(log.New(os.Stdout, "socks5: ", log.LstdFlags))),
 	)
-
-	log.Println("开始启动服务端！")
 
 	if err := server.ListenAndServe("tcp", socks5Listen); err != nil {
 		log.Println(err)
+	} else {
+		log.Println("world")
 	}
 
 	wg.Done()
